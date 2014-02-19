@@ -1,6 +1,6 @@
 <?php
 
-	$possible_url = array("createQuiz", "playersFromGame", "playerRegisterGame");
+	$possible_url = array("createQuiz", "playersFromGame", "playerRegisterGame", "startGameService", "questionsForGame");
 
 	$value = "An error has occurred";
 	
@@ -33,6 +33,26 @@
 					$value = $arr;
           		}
         		break;
+        	case "startGameService":
+        		if (isset($_GET["hash"]))
+          			$value = startGameService($_GET["hash"]);
+        		else
+        		{
+          			$arr["result"] = "Fail";
+					$arr["message"] = "Missing argument";
+					$value = $arr;
+          		}
+        		break;
+        	case "questionsForGame":
+        		if (isset($_GET["hash"]))
+          			$value = getQuestionsForGameByHash($_GET["hash"]);
+        		else
+        		{
+        			$arr["result"] = "Fail";
+					$arr["message"] = "Missing argument";
+					$value = $arr;
+          		}
+        		break;
     	}
 	}
 
@@ -45,6 +65,104 @@
     	Start of functions.
     
     */
+    //Get Questions for game
+    function getQuestionsForGameByHash($hash)
+	{
+
+		//DB Properties
+    	$host = 'loliveira.dynip.sapo.pt'; 
+    	$db = 'myQuiz'; 
+    	$uid = 'root'; 
+    	$pwd = 'whyonh';
+        
+        // Connect to the database server   
+        $link = mysql_connect($host, $uid, $pwd) or die("Could not connect");
+
+        //select the json database
+        mysql_select_db($db) or die("Could not select database");
+
+        //Execute the query
+        $rs = mysql_query("SELECT q2_question FROM questions WHERE q2_id IN (SELECT gq1_q2_id FROM gameQuestions WHERE gq1_q1_id IN (SELECT q1_id FROM quizes WHERE q1_hash = '$hash'))");
+		
+		$question_game = array();
+		$check = mysql_num_rows($rs);
+		if($check>0)
+		{			
+				while($question = mysql_fetch_assoc($rs)) 
+				{
+					$question_game[] = $question['q2_question'];
+				}
+		}
+			
+		//Close connection
+		mysqli_close($link);
+		//echo "Closed connection";
+
+  		return $question_game;
+	}
+    
+    
+    //Start Game Service
+    function startGameService($hash)
+	{
+		$arr = array();
+		//DB Properties
+    	$host = 'loliveira.dynip.sapo.pt'; 
+    	$db = 'myQuiz'; 
+    	$uid = 'root'; 
+    	$pwd = 'whyonh';
+		
+		// Connect to the database server   
+        $link = mysql_connect($host, $uid, $pwd) or die("Could not connect");
+
+        //select the json database
+        mysql_select_db($db) or die("Could not select database");
+
+        //Execute the query
+        
+        $rs = mysql_query("SELECT q1_id FROM quizes where q1_hash = '$hash' and q1_state=1");
+		$check = mysql_num_rows($rs);
+		if($check>0)
+		{
+			//Close connection
+			mysqli_close($link);
+			
+			// Update
+			// Connect to the database server   
+        	$link = mysql_connect($host, $uid, $pwd) or die("Could not connect");
+
+        	//select the json database
+        	mysql_select_db($db) or die("Could not select database");
+
+        	//Execute the query        
+        	$rs = mysql_query("UPDATE quizes SET q1_state=2 where q1_hash='$hash' and q1_state=1");
+        	
+        	//Close connection
+			mysqli_close($link);
+			
+			$result = generateQuestionsForGame($hash);
+			
+			if($result=="Fail")
+			{
+				$arr["result"] = "Fail";
+				$arr["message"] = "Could not initialize game";
+			}
+			else
+			{
+				$arr["result"] = "Started";
+				$arr["message"] = "";
+			}
+			
+			
+		}
+		else
+		{
+			$arr["result"] = "Fail";
+			$arr["message"] = "Could not initialize game";
+		}
+
+		return $arr;
+	}
     
     function registerPlayerInGame($hash, $player)
 	{
@@ -84,7 +202,7 @@
         	mysql_select_db($db) or die("Could not select database");
 
         	//Execute the query
-        	$rs = mysql_query("select * from quizes where q1_hash='$hash'");
+        	$rs = mysql_query("select * from quizes where q1_hash='$hash' and q1_state=1");
 			
 			$gameHash = mysql_num_rows($rs);
 			
@@ -144,7 +262,7 @@
 			else
 			{
 				$arr["result"] = "Fail";
-				$arr["message"] = "Game not found";
+				$arr["message"] = "Game not found or not accepting registeries at the time";
 			}
 			
 		}
@@ -276,6 +394,36 @@
         	$randomString .= $characters[rand(0, strlen($characters) - 1)];
     	}
     	return $randomString;
+	}
+	
+	function generateQuestionsForGame($hash)
+	{
+		$returnString = "Fail";
+		$returnString = "Good";
+		
+		//Get 20 Random Questions for an array
+		//Write them on the DB
+		//DB Properties
+    	$host = 'loliveira.dynip.sapo.pt'; 
+    	$db = 'myQuiz'; 
+    	$uid = 'root'; 
+    	$pwd = 'whyonh';
+    	
+		// Connect to the database server   
+        $link = mysql_connect($host, $uid, $pwd) or die("Could not connect");
+
+        //select the json database
+         mysql_select_db($db) or die("Could not select database");
+
+        //Execute the query
+        
+        $rs = mysql_query("INSERT INTO gameQuestions (gq1_q1_id, gq1_q2_id) (SELECT (select q1_id from quizes where q1_hash = '$hash') , q2_id FROM questions ORDER BY RAND() LIMIT 20)");
+			
+		//Close connection
+		mysqli_close($link);
+		
+		
+		return $returnString;
 	}
   
 ?> 

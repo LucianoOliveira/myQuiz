@@ -4,6 +4,11 @@ if( !isset($_SESSION['erro']))
 {
 	$_SESSION['erro']=0;
 }
+
+if( !isset($_SESSION['err_msg']))
+{
+	$_SESSION['err_msg']='';
+}
 ?>
 <html><head>
 		<meta http-equiv="Content-Type" content="text/html;charset=utf-8" >
@@ -36,7 +41,15 @@ if( !isset($_SESSION['erro']))
 		<?php
 			if($_SESSION['erro']==1)
 			{
-				echo '<div style="color:red" class="strapline" >There was an error creating your game. Please try again</div>';
+				if(isset($_SESSION['err_msg']) && !$_SESSION['err_msg']=='')
+				{
+					$message = $_SESSION['err_msg'];
+					echo '<div style="color:red" class="strapline" >'.$message.'. Please try again</div>';
+				}
+				else
+				{
+					echo '<div style="color:red" class="strapline" >There was an unexpected error. Please try again</div>';
+				}
 				$_SESSION['erro']=0;
 			}
 		?>

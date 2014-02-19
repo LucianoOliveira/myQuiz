@@ -24,57 +24,60 @@
 		
 		
 		<div style="background-image:none; width:585px; " class="panel" >
-			
-		<?php
-			session_start();
-			
-			//Try to create the new quiz... if sucess go to new page
-			//If failed go to index with error
-			$newHash = create_quiz();
-			if($_SESSION['erro']==0)
-			{
-				$_SESSION['hash']=$newHash;
-				header("Location: playQuiz.php");
-				
-			}
-			else
-			{
-				header("Location: index.php");
-			}
-			
-			
-			
-			function create_quiz()
-			{
-				$returnString = "";
-				
-				$url = 'http://loliveira.dynip.sapo.pt/myQuiz/wsQuiz.php?function=createQuiz';
-				$json_response = file_get_contents($url, true);
-
-				$obj = json_decode($json_response);
-				$result = $obj->{'result'};
-				if($result == "Created")
-				{
-					$hash = $obj->{'hash'};
+<?php
+	session_start();
 	
-					$returnString = "".$hash;
-					$_SESSION['erro']=0;
+	//if error return no index
+	if(isset($_SESSION['erro']) && $_SESSION['erro']==1)
+	{
+		$_SESSION['err_msg']='The game could not be started, an error was found';
+		header("Location: index.php");
+				
+	}
+	//if no hash found
+	if(!isset($_SESSION['hash']) || $_SESSION['hash']=='')
+	{
+		$_SESSION['erro']=1;
+		$_SESSION['err_msg']='The game could not be started, hash was not loaded';
+		header("Location: index.php");
+				
+	}
+	
+	//Run WS to start the creation of the game.
+	$hash = $_SESSION['hash'];
+				
+	$url = "http://loliveira.dynip.sapo.pt/myQuiz/wsQuiz.php?function=startGameService&hash=" .$hash."";
+	$json_response = file_get_contents($url, true);
+
+	$obj = json_decode($json_response);
+	$result = $obj->{'result'};
+	
+	
+	if($result == "Started")
+	{
+		$_SESSION['erro']=0;
+		$_SESSION['err_msg']='';
+		header("Location: quiz.php");
 					
-				}
-				else
-				{
-					$returnString = "";
-					$_SESSION['erro']=1;
-					$_SESSION['err_msg']='There was a problem creating the game';
-				}
-				return $returnString;
-			}
-			
-			
-			
-		?>	
+	}
+	else
+	{	
+		$_SESSION['erro']=1;
+		if($obj->{'message'}!='')
+		{
+			$_SESSION['err_msg']=$obj->{'message'};
+		}
+		else
+		{
+			$_SESSION['err_msg']='There was a problem starting the game';
+		}	
+		header("Location: index.php");
+	}
 		
-		</div>
+			
+?>	
+
+</div>
 	
 		
 		

@@ -40,44 +40,41 @@ if( !isset($_SESSION['erro']))
 				if( isset($_SESSION['hash']) &&  !$_SESSION['hash']=="" && $_SESSION['erro']==0)
 				{
 					$hash = $_SESSION['hash'];
-					$url = 'http://loliveira.dynip.sapo.pt/myQuiz/wsQuiz.php?function=playersFromGame&hash=' .$hash;
+					$url = 'http://loliveira.dynip.sapo.pt/myQuiz/wsQuiz.php?function=questionsForGame&hash=' .$hash;
 					$json_response = file_get_contents($url, true);
-					$names = json_decode($json_response);					
+					$questions = json_decode($json_response);					
 					
-					$numPlayers = count($names);
+					$numQuestions = count($questions);
 					
 					echo '<center>';
-					echo '<div style="" class="strapline" >New game created<br>';
+					echo '<div style="" class="strapline" >New game started<br>';
 					echo '<strong>'.$hash.'</strong>';
 					echo '</div>';
 					echo '</center>';
 					
-					if($numPlayers>0)
+					if($numQuestions>0)
 					{
-						//Display the button to start the game
-						echo '<a href="startGameService.php">
-   								<input type="button" value="Start" style="width:100%; height:20px; " />
-							</a>';
+						echo '<center>';
+						echo '<table style="width:auto">';				
+						for($x = 0;$x < $numQuestions;$x++)
+						{
+							$number = $x+1;
+							echo "<tr>";
+								echo "<td>Question ".$number." -  </td>";
+								echo "<td>".$questions[$x]."</td>";
+							echo "</tr>";
+						}					
+						echo '</table>';
+						echo '</center>';
 					}
 					
 					
-					echo '<center>';
-					echo '<table style="width:auto">';				
-					for($x = 0;$x < $numPlayers;$x++)
-					{
-						$number = $x+1;
-						echo "<tr>";
-							echo "<td>Player ".$number."</td>";
-							echo "<td>".$names[$x]."</td>";
-						echo "</tr>";
-					}					
-					echo '</table>';
-					echo '</center>';	
+						
 				}
 				else
 				{
 					$_SESSION['erro']=1;
-					$_SESSION['err_msg']='The game you are trying to register is not available';
+					$_SESSION['err_msg']='The game you are trying to play is not available';
 					header("Location: index.php");
 				}
 					
